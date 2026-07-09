@@ -14,29 +14,29 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Fetch Pre-Compiled Release Template
+      - name: Fetch Light Project Template
         run: |
           wget https://github.com
-          unzip love-11.5-android-embed.zip -d build-dir
+          unzip -q love-11.5-android-embed.zip -d build-dir
 
-      - name: Clean Unused Large Files
+      - name: Clean Junk Files (Save Space)
         run: |
           rm love-11.5-android-embed.zip
-          rm -rf build-dir/gradle/wrapper/gradle-*.zip
+          rm -rf build-dir/love-android-embed/gradle/wrapper/gradle-*.zip
 
-      - name: Inject Your Game File
+      - name: Inject Your Game
         run: |
-          mkdir -p build-dir/app/src/main/assets
-          cp game.love build-dir/app/src/main/assets/game.love
+          mkdir -p build-dir/love-android-embed/app/src/main/assets
+          cp game.love build-dir/love-android-embed/app/src/main/assets/game.love
 
-      - name: Fast Compile APK
+      - name: Build APK (Low Memory Mode)
         run: |
-          cd build-dir
+          cd build-dir/love-android-embed
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --max-workers=1 -Dorg.gradle.jvmargs=-Xmx2048m
 
-      - name: Upload Final APK Artifact
+      - name: Upload Final APK
         uses: actions/upload-artifact@v4
         with:
           name: game-alpha-build
-          path: build-dir/app/build/outputs/apk/debug/*.apk
+          path: build-dir/love-android-embed/app/build/outputs/apk/debug/*.apk
