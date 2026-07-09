@@ -14,29 +14,32 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Fetch Light Project Template
+      - name: Download LÖVE Android Source
         run: |
           wget https://github.com
           unzip -q love-11.5-android-embed.zip -d build-dir
-
-      - name: Clean Junk Files (Save Space)
-        run: |
           rm love-11.5-android-embed.zip
-          rm -rf build-dir/love-android-embed/gradle/wrapper/gradle-*.zip
 
-      - name: Inject Your Game
+      - name: Inject Game File
         run: |
-          mkdir -p build-dir/love-android-embed/app/src/main/assets
-          cp game.love build-dir/love-android-embed/app/src/main/assets/game.love
+          # Create the specific folder for the Embed flavor
+          mkdir -p build-dir/love-android-embed/app/src/embed/assets
+          cp game.love build-dir/love-android-embed/app/src/embed/assets/game.love
 
-      - name: Build APK (Low Memory Mode)
+      - name: Build APK (Ultra-Low Memory)
         run: |
           cd build-dir/love-android-embed
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --max-workers=1 -Dorg.gradle.jvmargs=-Xmx2048m
+          # Force 1GB limit, no daemon, sequential execution, and specific EmbedNoRecord target
+          ./gradlew assembleEmbedNoRecordDebug \
+            --no-daemon \
+            --no-parallel \
+            --max-workers=1 \
+            -Dorg.gradle.jvmargs="-Xmx1024m -XX:MaxMetaspaceSize=256m"
 
       - name: Upload Final APK
         uses: actions/upload-artifact@v4
         with:
           name: game-alpha-build
-          path: build-dir/love-android-embed/app/build/outputs/apk/debug/*.apk
+          # Note the path change to match the specific build target
+          path: build-dir/love-android-embed/app/build/outputs/apk/embedNoRecord/debug/*.apk
