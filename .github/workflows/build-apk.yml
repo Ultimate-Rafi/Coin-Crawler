@@ -8,38 +8,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Download LÖVE Android Source
+      - name: Inject Game Into Pre-Built APK Template
         run: |
-          wget https://github.com
-          unzip -q love-11.5-android-embed.zip -d build-dir
-          rm love-11.5-android-embed.zip
-
-      - name: Inject Game File
-        run: |
-          # Create the specific folder for the Embed flavor
-          mkdir -p build-dir/love-android-embed/app/src/embed/assets
-          cp game.love build-dir/love-android-embed/app/src/embed/assets/game.love
-
-      - name: Build APK (Ultra-Low Memory)
-        run: |
-          cd build-dir/love-android-embed
-          chmod +x gradlew
-          # Force 1GB limit, no daemon, sequential execution, and specific EmbedNoRecord target
-          ./gradlew assembleEmbedNoRecordDebug \
-            --no-daemon \
-            --no-parallel \
-            --max-workers=1 \
-            -Dorg.gradle.jvmargs="-Xmx1024m -XX:MaxMetaspaceSize=256m"
+          # 1. Download the official, pre-compiled Android Base APK
+          wget -q https://github.com
+          
+          # 2. Install zip tool to modify the APK archive directly
+          sudo apt-get update && sudo apt-get install -y zip
+          
+          # 3. Create the exact folder layout inside the APK structure
+          mkdir -p assets
+          cp game.love assets/game.love
+          
+          # 4. Inject your game directly into the APK file without compiling anything
+          zip -g love-11.5-android.apk assets/game.love
+          
+          # 5. Rename it to your final output game
+          mv love-11.5-android.apk my-alpha-game.apk
 
       - name: Upload Final APK
         uses: actions/upload-artifact@v4
         with:
           name: game-alpha-build
-          # Note the path change to match the specific build target
-          path: build-dir/love-android-embed/app/build/outputs/apk/embedNoRecord/debug/*.apk
+          path: my-alpha-game.apk
