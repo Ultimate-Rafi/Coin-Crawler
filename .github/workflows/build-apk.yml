@@ -1,0 +1,36 @@
+name: Mobile APK Compiler
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Fetch Official LÖVE Android Source
+        run: |
+          git clone --recurse-submodules https://github.com
+          
+      - name: Inject Mobile Game File
+        run: |
+          mkdir -p love-android/app/src/embed/assets
+          cp game.love love-android/app/src/embed/assets/game.love
+
+      - name: Compile Standalone APK
+        run: |
+          cd love-android
+          chmod +x gradlew
+          ./gradlew assembleEmbedNoRecordDebug
+
+      - name: Upload Final APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-alpha-build
+          path: love-android/app/build/outputs/apk/embedNoRecord/debug/*.apk
