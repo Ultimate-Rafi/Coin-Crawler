@@ -8,14 +8,35 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build Android APK
-        uses: love-actions/love-actions-android@v2
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
         with:
-          love-version: '11.5'
-          game-path: '.' # Looks for game.love in your root directory
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Fetch Pre-Compiled Release Template
+        run: |
+          wget https://github.com
+          unzip love-11.5-android-embed.zip -d build-dir
+
+      - name: Clean Unused Large Files
+        run: |
+          rm love-11.5-android-embed.zip
+          rm -rf build-dir/gradle/wrapper/gradle-*.zip
+
+      - name: Inject Your Game File
+        run: |
+          mkdir -p build-dir/app/src/main/assets
+          cp game.love build-dir/app/src/main/assets/game.love
+
+      - name: Fast Compile APK
+        run: |
+          cd build-dir
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload Final APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: game-alpha-build
-          path: artifacts/*.apk
+          path: build-dir/app/build/outputs/apk/debug/*.apk
